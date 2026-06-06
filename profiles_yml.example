@@ -1,0 +1,42 @@
+# =============================================================
+# Petal & Co — dbt Connection Profile Template
+# =============================================================
+# 1. Copy this file and rename it to profiles.yml
+# 2. Fill in your Snowflake credentials
+# 3. profiles.yml is in .gitignore — it will never be committed
+# =============================================================
+
+petal_co:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"       # e.g. QYFPUER-MJ41274
+      user: "{{ env_var('SNOWFLAKE_USER') }}"             # e.g. SIDDARTHSCHEMAWORKS
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"     # your Snowflake password
+      role: SYSADMIN
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"   # e.g. COMPUTE_WH
+      database: PETAL_CO_DW
+      schema: STAGING
+      threads: 4
+      client_session_keep_alive: false
+
+# =============================================================
+# OR — replace env_var() with hardcoded values if running locally
+# and make sure profiles.yml is in your .gitignore
+# =============================================================
+
+# petal_co:
+#   target: dev
+#   outputs:
+#     dev:
+#       type: snowflake
+#       account: your_account_here
+#       user: your_user_here
+#       password: your_password_here
+#       role: SYSADMIN
+#       warehouse: COMPUTE_WH
+#       database: PETAL_CO_DW
+#       schema: STAGING
+#       threads: 4
+#       client_session_keep_alive: false

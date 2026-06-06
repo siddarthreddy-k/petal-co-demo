@@ -1,0 +1,36 @@
+name: 'petal_co'
+version: '1.0.0'
+config-version: 2
+
+profile: 'petal_co'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  petal_co:
+    staging:
+      +materialized: view
+      +schema: STAGING
+    marts:
+      dimensions:
+        +materialized: table
+        +schema: MARTS
+      facts:
+        +materialized: table
+        +schema: MARTS
+      aggregates:
+        +materialized: table
+        +schema: MARTS
+
+seeds:
+  petal_co:
+    +schema: SEEDS

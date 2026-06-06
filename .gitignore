@@ -1,0 +1,51 @@
+# =============================================================
+# Ember & Co — .gitignore
+# =============================================================
+
+# Environment variables — NEVER commit
+.env
+*.env
+
+# dbt
+target/
+dbt_packages/
+logs/
+.user.yml
+
+# Profiles — use local profiles.yml with env vars instead
+# profiles.yml  ← this one IS committed (it uses env vars, no secrets)
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Sensitive data — just in case
+*.pem
+*.key
+secrets.*
+
+# Profiles
+profiles.yml

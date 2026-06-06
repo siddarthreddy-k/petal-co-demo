@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: raw
+    database: PETAL_CO_DW
+    schema: RAW
+    tables:
+      - name: orders
+      - name: customers
+      - name: ad_spend
+      - name: subscriptions
