@@ -4,7 +4,7 @@
 
 Petal & Co is a mock D2C beauty and wellness brand built as a Schema Works portfolio demo. This repo contains a fully working data pipeline — from synthetic data generation through to a live Looker Studio dashboard — built on the same stack used for real client engagements.
 
-> **Live dashboard:** [View on Looker Studio](#) *(add link)*
+> **Live dashboard:** [View on Looker Studio](https://datastudio.google.com/s/noNS3VpwPDo)
 > **Demo Project 1 — Ember & Co (apparel):** [github.com/siddarthreddy-k/ember-co-demo](https://github.com/siddarthreddy-k/ember-co-demo)
 
 ---
