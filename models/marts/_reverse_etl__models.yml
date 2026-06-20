@@ -1,0 +1,51 @@
+version: 2
+
+models:
+  - name: stg_activation_pii
+    description: >
+      Synthetic, deterministic activation attributes (fake non-deliverable
+      email, marketing_consent, is_erased) for the reverse-ETL demo.
+      Never reads real PII.
+    columns:
+      - name: CUSTOMER_ID
+        tests: [not_null, unique]
+      - name: ACTIVATION_EMAIL
+        description: Fabricated @example.com address; non-deliverable by design.
+        tests:
+          - not_null
+          # Safety gate: every activation email MUST be on the reserved,
+          # non-deliverable @example.com domain. If this ever fails, a
+          # real-looking address leaked in -> STOP the sync.
+          - dbt_utils.expression_is_true:
+              expression: "LIKE '%@example.com'"
+      - name: MARKETING_CONSENT
+        tests: [not_null]
+      - name: IS_ERASED
+        tests: [not_null]
+
+  - name: reverse_etl_klaviyo_audience
+    description: >
+      Consent-gated, minimized activation audience for Klaviyo. Only
+      consented, non-erased, ACTIVE subscribers; only email + risk_band
+      + churn_probability + top driver + MRR.
+    columns:
+      - name: EMAIL
+        tests:
+          - not_null
+          - unique
+          # The gates must hold at the output too: nothing but
+          # non-deliverable demo addresses can ever reach Klaviyo.
+          - dbt_utils.expression_is_true:
+              expression: "LIKE '%@example.com'"
+      - name: RISK_BAND
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Low', 'Medium', 'High']
+      - name: CHURN_PROBABILITY
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0 AND CHURN_PROBABILITY <= 1"
+      - name: TOP_CHURN_DRIVER
+        tests: [not_null]

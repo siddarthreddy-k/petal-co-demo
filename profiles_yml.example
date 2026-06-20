@@ -11,8 +11,8 @@ petal_co:
   outputs:
     dev:
       type: snowflake
-      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"       # e.g. QYFPUER-MJ41274
-      user: "{{ env_var('SNOWFLAKE_USER') }}"             # e.g. SIDDARTHSCHEMAWORKS
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"       # e.g. ABCDEFG-XY00000
+      user: "{{ env_var('SNOWFLAKE_USER') }}"             # e.g. EXAMPLE_USER
       password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"     # your Snowflake password
       role: SYSADMIN
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE') }}"   # e.g. COMPUTE_WH
