@@ -1,0 +1,28 @@
+version: 2
+
+# The ML_CHURN_* tables are written directly to PETAL_CO_DW.ML by the
+# churn_prediction_model.py script (outside dbt), so they are dbt SOURCES,
+# not models. Reference them with source('ml', '<name>').
+sources:
+  - name: ml
+    database: PETAL_CO_DW
+    schema: ML
+    description: >
+      Churn ML outputs written by churn_prediction_model.py (Python, not dbt).
+      Read-only inputs to the reverse-ETL activation layer.
+    tables:
+      - name: ML_CHURN_RISK_SCORES
+        description: Per-subscriber churn probability, risk band, and top driver.
+        columns:
+          - name: CUSTOMER_ID
+            tests: [not_null]
+          - name: CHURN_PROBABILITY
+            tests: [not_null]
+          - name: RISK_BAND_LABEL
+            description: Text band — Low / Medium / High.
+          - name: TOP_CHURN_DRIVER
+            description: Feature name of the top SHAP driver for that subscriber.
+          - name: IS_CHURNED
+            description: Whether the subscriber has already churned.
+          - name: ESTIMATED_MRR
+            description: Estimated monthly recurring revenue (£). Used for finance framing.
