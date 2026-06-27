@@ -7,6 +7,11 @@ Petal & Co is a mock D2C beauty and wellness brand built as a Schema Works portf
 > **Live dashboard:** [View on Looker Studio](https://datastudio.google.com/s/noNS3VpwPDo)
 > **Demo Project 1 — Ember & Co (apparel):** [github.com/siddarthreddy-k/ember-co-demo](https://github.com/siddarthreddy-k/ember-co-demo)
 
+## Feature Deep-Dives
+- [Churn Model Decisions](./docs/Churn-model-decisions.md)
+- [Reverse-ETL → Klaviyo (consent-gated activation)](./docs/Reverse-ETL-Klaviyo.md)
+- [GDPR Article 17 — Right to Erasure](./docs/GDPR-Right-to_Erasure.md)
+
 ---
 
 ## The Data Story
