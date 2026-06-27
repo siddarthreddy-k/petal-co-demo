@@ -1,0 +1,12 @@
+customer_id,request_date,erased_at,erased_by,status
+CUST00001,2026-06-20,2026-06-21,gdpr_macro,erased
+CUST00002,2026-06-22,2026-06-23,gdpr_macro,erased
+CUST00003,2026-06-24,2026-06-25,gdpr_macro,erased
+CUST00004,2026-06-25,,gdpr_macro,requested
+CUST00005,2026-06-26,,gdpr_macro,requested
+CUST00042,2026-06-18,2026-06-19,gdpr_macro,erased
+CUST99999,2026-06-26,,gdpr_macro,requested
+CUST00028,2026-06-27,2026-06-27,gdpr_macro,erased
+CUST00033,2026-06-27,,gdpr_macro,requested
+CUST00081,2026-06-27,,gdpr_macro,requested
+CUST99999,2026-06-27,,gdpr_macro,requested

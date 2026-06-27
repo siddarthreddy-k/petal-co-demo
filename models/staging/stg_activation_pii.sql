@@ -28,26 +28,35 @@ WITH customers AS (
 
 ),
 
+erased AS (
+    SELECT customer_id
+    FROM {{ ref('gdpr_erasure_registry') }}
+    WHERE status = 'erased'
+),
+
 synthetic AS (
 
     SELECT
-        CUSTOMER_ID,
+        c.CUSTOMER_ID,
 
         -- Synthetic, NON-DELIVERABLE activation email.
         -- @example.com is reserved (RFC 2606) and cannot send.
-        'demo+' || CUSTOMER_ID || '@example.com'        AS ACTIVATION_EMAIL,
+        'demo+' || c.CUSTOMER_ID || '@example.com'        AS ACTIVATION_EMAIL,
 
         -- Deterministic marketing consent (~70% TRUE).
         -- Hash the ID -> stable integer -> modulo bucket.
         -- ABS(HASH()) is stable per-value within Snowflake.
-        (ABS(HASH(CUSTOMER_ID)) % 100) < 70             AS MARKETING_CONSENT,
+        (ABS(HASH(c.CUSTOMER_ID)) % 100) < 70             AS MARKETING_CONSENT,
 
-        -- Deterministic erasure flag (~5% TRUE).
-        -- Offset the hash so it's independent of the consent bucket.
-        (ABS(HASH(CUSTOMER_ID || 'erasure_salt')) % 100) < 5
-                                                         AS IS_ERASED
+        -- Erasure is now driven by the GDPR registry (Article 17),
+        -- not a synthetic flag. A real deletion request flows:
+        -- registry -> IS_ERASED = TRUE -> dropped by the erasure gate
+        -- in reverse_etl_klaviyo_audience. No row is ever overwritten;
+        -- suppression is enforced declaratively on every read.
+        (e.customer_id IS NOT NULL)                       AS IS_ERASED
 
-    FROM customers
+    FROM customers c
+    LEFT JOIN erased e ON c.CUSTOMER_ID = e.customer_id
 
 )
 
