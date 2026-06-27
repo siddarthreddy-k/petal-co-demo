@@ -20,6 +20,9 @@ models:
     staging:
       +materialized: view
       +schema: STAGING
+    governance:
+      +materialized: table
+      +schema: GOVERNANCE
     marts:
       dimensions:
         +materialized: table
