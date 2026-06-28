@@ -1,0 +1,53 @@
+semantic_models:
+  - name: orders
+    description: "Order-grain facts for Petal & Co."
+    model: ref('fact_orders')
+    defaults:
+      agg_time_dimension: order_date
+
+    entities:
+      - name: order_record
+        type: primary
+        expr: order_id
+      - name: customer
+        type: foreign
+        expr: customer_id
+
+    dimensions:
+      - name: order_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: region
+        type: categorical
+      - name: channel
+        type: categorical
+      - name: product_category
+        type: categorical
+        expr: product_category_key
+      - name: is_subscription_order
+        type: categorical
+      - name: is_returned
+        type: categorical
+
+    measures:
+      - name: net_revenue_total
+        description: "Net revenue after discounts and returns."
+        agg: sum
+        expr: net_revenue
+      - name: gross_revenue_total
+        agg: sum
+        expr: gross_revenue
+      - name: order_count
+        agg: count
+        expr: order_id
+      - name: returned_order_count
+        agg: sum
+        expr: is_returned
+      - name: returned_revenue_total
+        agg: sum
+        expr: returned_revenue
+      - name: mrr_total
+        description: "Monthly recurring revenue — net revenue from subscription orders only."
+        agg: sum
+        expr: case when is_subscription_order = 1 then net_revenue else 0 end

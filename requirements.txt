@@ -1,2 +1,18 @@
+# --- dbt + warehouse ---
+dbt-core==1.11.7
+dbt-snowflake==1.11.3
+dbt-bigquery==1.11.1
+
+# --- dbt Semantic Layer
+dbt-metricflow==0.13.0
+
+# --- Snowflake connectivity
 snowflake-connector-python==3.6.0
 python-dotenv==1.0.1
+
+# --- ML: churn model
+xgboost==2.0.3
+scikit-learn==1.4.0
+shap==0.44.1
+pandas==2.1.4
+numpy==1.26.3

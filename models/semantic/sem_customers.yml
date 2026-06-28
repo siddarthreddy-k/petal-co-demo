@@ -1,0 +1,27 @@
+semantic_models:
+  - name: customers
+    description: "Customer dimension — acquisition attributes and segments."
+    model: ref('dim_customers')
+    defaults:
+      agg_time_dimension: acquisition_date
+
+    entities:
+      - name: customer
+        type: primary
+        expr: customer_id
+
+    dimensions:
+      - name: acquisition_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: region
+        type: categorical
+      - name: customer_type
+        type: categorical
+
+    measures:
+      - name: customer_count
+        description: "Count of customers."
+        agg: count
+        expr: customer_id
