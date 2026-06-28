@@ -1,0 +1,87 @@
+metrics:
+  - name: net_revenue
+    label: "Net Revenue"
+    description: "Net revenue after discounts and returns. The canonical revenue number."
+    type: simple
+    type_params:
+      measure: net_revenue_total
+
+  - name: gross_revenue
+    label: "Gross Revenue"
+    type: simple
+    type_params:
+      measure: gross_revenue_total
+
+  - name: total_orders
+    label: "Total Orders"
+    type: simple
+    type_params:
+      measure: order_count
+
+  - name: returned_orders
+    label: "Returned Orders"
+    type: simple
+    type_params:
+      measure: returned_order_count
+  
+  - name: total_customers
+    label: "Total Customers"
+    type: simple
+    type_params:
+      measure: customer_count
+
+  - name: returned_revenue
+    label: "Returned Revenue"
+    type: simple
+    type_params:
+      measure: returned_revenue_total
+  
+  - name: mrr
+    label: "Monthly Recurring Revenue"
+    description: "Net revenue from subscription orders. A subscription-revenue proxy."
+    type: simple
+    type_params:
+      measure: mrr_total
+
+  - name: aov
+    label: "Average Order Value"
+    description: "Net revenue / order count. Defined ONCE here."
+    type: ratio
+    type_params:
+      numerator: net_revenue
+      denominator: total_orders
+
+  - name: return_rate
+    label: "Return Rate"
+    description: "Returned orders / total orders."
+    type: ratio
+    type_params:
+      numerator: returned_orders
+      denominator: total_orders
+
+  - name: revenue_per_customer
+    label: "Revenue per Customer"
+    description: "Net revenue per acquired customer — an LTV proxy. Spans orders + customers."
+    type: ratio
+    type_params:
+      numerator: net_revenue
+      denominator: total_customers
+
+  - name: revenue_retention_rate
+    label: "Revenue Retention Rate"
+    description: "Share of gross revenue kept after returns. Derived metric."
+    type: derived
+    type_params:
+      expr: (gross_revenue - returned_revenue) / gross_revenue
+      metrics:
+        - name: gross_revenue
+        - name: returned_revenue
+
+  - name: cumulative_net_revenue_eom
+    label: "Cumulative Net Revenue (EOM)"
+    description: "All-time running total of net revenue, shown at each month-end."
+    type: cumulative
+    type_params:
+      measure: net_revenue_total
+      cumulative_type_params:
+        period_agg: last
