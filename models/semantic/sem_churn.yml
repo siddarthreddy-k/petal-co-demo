@@ -1,0 +1,65 @@
+# models/semantic/sem_churn.yml
+#
+# Semantic model over the churn mart. Joins to sem_orders + sem_customers
+# automatically on the shared 'customer' entity, so questions like
+# "top 10 highest-risk subscribers and their MRR" compose across models
+# WITHOUT a bespoke churn tool.
+#
+# Grain: one row per customer (a scoring snapshot).
+# Reserved-word check: 'churn', 'risk_band', 'score_date' are all safe.
+
+semantic_models:
+  - name: sem_churn
+    description: >
+      Predicted churn risk per customer (snapshot). PREDICTED, not actual churn.
+      Sourced from the ML model outputs, promoted through fct_churn_scores.
+    model: ref('fact_churn_scores')
+
+    defaults:
+      # Required so measures have a time anchor. Maps to score_date below.
+      agg_time_dimension: score_date
+
+    entities:
+      - name: customer
+        type: primary
+        expr: customer_id
+
+    dimensions:
+      - name: score_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: risk_band_label
+        type: categorical
+      - name: top_churn_driver
+        type: categorical
+
+    measures:
+      - name: churn_scored_customer_count
+        description: Count of customers that have a churn score.
+        agg: count
+        expr: customer_id
+
+      - name: high_risk_customer_count
+        description: Count of customers in the High risk band.
+        agg: sum
+        expr: is_high_risk
+
+      - name: estimated_mrr_total
+        description: Total estimated MRR across all scored customers.
+        agg: sum
+        expr: estimated_mrr
+
+      - name: at_risk_mrr_total
+        description: >
+          Estimated MRR from customers at elevated churn risk (High or Medium
+          band) who are STILL ACTIVE (not yet churned). Excludes already-churned
+          customers, whose estimated_mrr is 0 anyway — this is the revenue
+          genuinely still on the table to save.
+        agg: sum
+        expr: "case when risk_band_label in ('High','Medium') and is_churned = false then estimated_mrr else 0 end"
+
+      - name: avg_churn_probability_measure
+        description: Mean predicted churn probability.
+        agg: average
+        expr: churn_probability

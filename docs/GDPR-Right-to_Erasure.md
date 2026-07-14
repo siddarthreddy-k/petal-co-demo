@@ -50,7 +50,7 @@ audience — is added to the registry as `erased`:
 
 - **Suppression:** audience drops 1,065 → 1,064; the hero is gone, while two
   `requested`-only customers remain (request ≠ action).
-- **Destruction:** `RAW.CUSTOMERS.email` changes from `oliver.cust00028@example.com` to
+- **Destruction:** `RAW.CUSTOMERS.email` changes from `oliver.cust00028[at]example[dot]com` to
   `751b9615…2957bd6`; the change cascades through `STG_CUSTOMERS` to marts on rebuild.
 - **Audit:** the reconciliation log shows `OK — erased & suppressed` for the hero,
   `OK — requested, not yet actioned` for the pending pair, and `NO MATCH` for a stale ID.
@@ -58,7 +58,7 @@ audience — is added to the registry as `erased`:
 ### Honest scope
 
 This is a demonstration build on synthetic data. The synthetic email is non-deliverable
-(`@example.com`, RFC 2606), and no real PII exists anywhere in the warehouse. One
+(`[at]example.com`, RFC 2606), and no real PII exists anywhere in the warehouse. One
 production consideration is noted but not implemented here: if `RAW` is re-synced from
 source, erasure must run as a post-load step each sync — the registry makes that safe and
 idempotent.
