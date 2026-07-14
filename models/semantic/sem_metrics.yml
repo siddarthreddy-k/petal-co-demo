@@ -1,4 +1,5 @@
 metrics:
+  # --- Simple metrics ---
   - name: net_revenue
     label: "Net Revenue"
     description: "Net revenue after discounts and returns. The canonical revenue number."
@@ -43,6 +44,41 @@ metrics:
     type_params:
       measure: mrr_total
 
+
+  # --- Churn metrics (P3) ---
+ 
+  - name: churn_scored_customers
+    label: Churn-Scored Customers
+    type: simple
+    type_params:
+      measure: churn_scored_customer_count
+ 
+  - name: high_risk_customers
+    label: High-Risk Customers
+    type: simple
+    type_params:
+      measure: high_risk_customer_count
+ 
+  - name: total_scored_mrr
+    label: Total Scored MRR
+    type: simple
+    type_params:
+      measure: estimated_mrr_total
+ 
+  - name: at_risk_mrr
+    label: At-Risk MRR
+    type: simple
+    type_params:
+      measure: at_risk_mrr_total
+ 
+  - name: avg_churn_probability
+    label: Avg Churn Probability
+    type: simple
+    type_params:
+      measure: avg_churn_probability_measure
+  
+  # --- Ratio metrics ---
+
   - name: aov
     label: "Average Order Value"
     description: "Net revenue / order count. Defined ONCE here."
@@ -85,3 +121,10 @@ metrics:
       measure: net_revenue_total
       cumulative_type_params:
         period_agg: last
+  
+  - name: high_risk_rate
+    label: High-Risk Rate
+    type: ratio
+    type_params:
+      numerator: high_risk_customers
+      denominator: churn_scored_customers

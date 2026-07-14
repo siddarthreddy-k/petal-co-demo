@@ -17,7 +17,8 @@ models:
           # non-deliverable @example.com domain. If this ever fails, a
           # real-looking address leaked in -> STOP the sync.
           - dbt_utils.expression_is_true:
-              expression: "LIKE '%@example.com'"
+              arguments:
+                expression: "LIKE '%@example.com'"
       - name: MARKETING_CONSENT
         tests: [not_null]
       - name: IS_ERASED
@@ -36,7 +37,8 @@ models:
           # The gates must hold at the output too: nothing but
           # non-deliverable demo addresses can ever reach Klaviyo.
           - dbt_utils.expression_is_true:
-              expression: "LIKE '%@example.com'"
+              arguments:
+                expression: "LIKE '%@example.com'"
       - name: RISK_BAND
         tests:
           - not_null
@@ -46,6 +48,7 @@ models:
         tests:
           - not_null
           - dbt_utils.expression_is_true:
-              expression: ">= 0 AND CHURN_PROBABILITY <= 1"
+              arguments:
+                expression: ">= 0 AND CHURN_PROBABILITY <= 1"
       - name: TOP_CHURN_DRIVER
         tests: [not_null]

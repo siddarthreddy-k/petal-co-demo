@@ -49,3 +49,12 @@ secrets.*
 
 # Profiles
 profiles.yml
+
+# Snowflake keys (if ever placed near the repo — keep them out)
+*.p8
+*.pub
+
+# Secrets & runtime — never commit
+audit_log.jsonl
+mcp_server/__pycache__/
+*.pyc
