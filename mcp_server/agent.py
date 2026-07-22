@@ -33,6 +33,7 @@ from mf_executor import run_metric_query, assert_read_only_cage, \
     MetricFlowError, CageBreachError
 from audit import audit_log
 import guardrail
+import output_validator
 
 MODEL = "claude-haiku-4-5-20251001"   # small + cheap; fine for tool selection
 MAX_TOKENS = 1024
@@ -135,24 +136,50 @@ def _run_tool(tool_input: dict, team_context: str = "cli") -> dict:
     return {"status": "ok", "row_count": len(rows), "rows": rows}
 
 
-def ask(client: anthropic.Anthropic, question: str, team_context: str = "cli") -> str:
-    """One question -> answer. First the INPUT GUARDRAIL vets the request; only
-    an ALLOW proceeds to the query agent. `team_context` is recorded against
-    every governed query and guardrail decision in the audit log."""
+def ask(client: anthropic.Anthropic, question: str, team_context: str = "cli",
+        context: str = "") -> str:
+    """One question -> answer, wrapped in the full GOVERNANCE SANDWICH:
+
+        INPUT guardrail  ->  query agent  ->  OUTPUT validator  ->  user
+
+    Agent 1 (guardrail.py) vets the REQUEST; only an ALLOW proceeds. Agent 2
+    (this loop) answers via the one governed tool. Agent 3 (output_validator.py)
+    vets the ANSWER against the figures actually queried before it is shown —
+    fail-closed, so a bad answer is withheld, not sent. `team_context` is
+    recorded against every governed query and policy decision in the audit log.
+
+    `context` is OPTIONAL background (e.g. a Slack thread) given to the query
+    agent for grounding. It is deliberately NOT sent to the input guardrail: the
+    guardrail judges the actual QUESTION, so conversational thread chatter can't
+    trip it, and the output validator still judges the answer against the real
+    question and the queried evidence.
+    """
     # --- Agent 1: input guardrail (fail-closed) ---------------------------
     verdict = guardrail.check(client, question)
     if verdict["decision"] != "ALLOW":
         audit_log(metrics=[], group_by=None, team=team_context,
                   status="blocked", detail=f'{verdict["category"]}: {verdict["reason"]}',
-                  row_count=0)
+                  row_count=0, question=question)
         print(f"   [guardrail] BLOCK ({verdict['category']}): {verdict['reason']}")
         return (f"I can't help with that request. "
                 f"({verdict['category']}: {verdict['reason']})")
     print(f"   [guardrail] ALLOW")
 
     # --- Agent 2: query agent --------------------------------------------
-    messages = [{"role": "user", "content": question}]
+    if context:
+        first_message = (
+            "Background — recent Slack thread (context only; may be "
+            "conversational and not all relevant):\n"
+            f"{context}\n\n---\nQuestion to answer now:\n{question}"
+        )
+    else:
+        first_message = question
+    messages = [{"role": "user", "content": first_message}]
+    # Every governed query run this turn, captured so the output validator can
+    # check the answer's figures against what was ACTUALLY measured.
+    evidence: list[dict] = []
 
+    answer = ""
     while True:
         resp = client.messages.create(
             model=MODEL, max_tokens=MAX_TOKENS,
@@ -166,6 +193,14 @@ def ask(client: anthropic.Anthropic, question: str, team_context: str = "cli") -
                 if block.type == "tool_use":
                     print(f"   [tool] query_metric({json.dumps(block.input)})")
                     result = _run_tool(block.input, team_context)
+                    evidence.append({
+                        "metrics": block.input.get("metric_names"),
+                        "group_by": block.input.get("group_by"),
+                        "status": result.get("status"),
+                        "row_count": result.get("row_count", 0),
+                        "rows": result.get("rows"),
+                        "detail": result.get("reason"),
+                    })
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": block.id,
@@ -174,8 +209,31 @@ def ask(client: anthropic.Anthropic, question: str, team_context: str = "cli") -
             messages.append({"role": "user", "content": tool_results})
             continue
 
-        # No tool call -> final answer
-        return "".join(b.text for b in resp.content if b.type == "text")
+        # No tool call -> the model's final answer
+        answer = "".join(b.text for b in resp.content if b.type == "text")
+        break
+
+    # --- Agent 3: output validator (fail-closed) -------------------------
+    queried_metrics = [m for ev in evidence for m in (ev.get("metrics") or [])]
+    check = output_validator.check(client, question, answer, evidence)
+    if check["decision"] != "ALLOW":
+        audit_log(metrics=queried_metrics, group_by=None, team=team_context,
+                  status="blocked_output",
+                  detail=f'{check["category"]}: {check["reason"]}',
+                  row_count=0, question=question)
+        print(f"   [validator] BLOCK ({check['category']}): {check['reason']}")
+        return (
+            "I generated an answer but it did not pass output validation, so I'm "
+            "withholding it — governance is fail-closed on the answer too. "
+            f"(Reason — {check['category']}: {check['reason']}) "
+            "Try rephrasing, or ask for the underlying figures directly."
+        )
+    print(f"   [validator] ALLOW")
+    audit_log(metrics=queried_metrics, group_by=None, team=team_context,
+              status="answered", detail=None,
+              row_count=sum(ev.get("row_count", 0) for ev in evidence),
+              question=question)
+    return answer
 
 
 def main():
