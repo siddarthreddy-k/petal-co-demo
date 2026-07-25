@@ -1,0 +1,34 @@
+# =============================================================
+# Petal & Co — CI-only dbt profile
+# -------------------------------------------------------------
+# SAFE TO COMMIT. Contains NO secrets — every value is either a
+# non-sensitive default or read from an environment variable that
+# GitHub Actions injects from repository Secrets at run time.
+#
+# Used by CI only (DBT_PROFILES_DIR=ci). Your local dev profile
+# stays in the gitignored root profiles.yml and is untouched.
+#
+# Isolation: this target writes ONLY to the PETAL_CO_CI database.
+# Sources still resolve to PETAL_CO_DW (hardcoded in sources.yml),
+# so CI reads real synthetic source data but can never write to
+# the production database.
+# =============================================================
+
+petal_co:
+  target: ci
+  outputs:
+    ci:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', 'noop') }}"
+      user: "{{ env_var('SNOWFLAKE_CI_USER', 'SVC_SCHEMA_WORKS_CI') }}"
+      role: "{{ env_var('SNOWFLAKE_CI_ROLE', 'SCHEMA_WORKS_CI') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_CI_WAREHOUSE', 'CI_WH') }}"
+      database: "{{ env_var('SNOWFLAKE_CI_DATABASE', 'PETAL_CO_CI') }}"
+      schema: "{{ env_var('SNOWFLAKE_CI_SCHEMA', 'SEMANTIC') }}"
+      # Key-pair auth (service user, MFA-exempt). dbt-snowflake detects
+      # key-pair when private_key_path is set — no password, no authenticator.
+      private_key_path: "{{ env_var('SNOWFLAKE_CI_PRIVATE_KEY_PATH', 'ci_key.p8') }}"
+      private_key_passphrase: "{{ env_var('SNOWFLAKE_CI_PRIVATE_KEY_PASSPHRASE', '') }}"
+      threads: 4
+      client_session_keep_alive: false
+      query_tag: petal_co_ci
