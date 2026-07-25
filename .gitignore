@@ -58,3 +58,8 @@ profiles.yml
 audit_log.jsonl
 mcp_server/__pycache__/
 *.pyc
+
+# CI local-testing env — holds Snowflake account + key passphrase, NEVER commit.
+# (ci/.env.example and ci/load-ci-env.bat ARE committed — they contain no secrets.)
+ci/.env
+!ci/.env.example

@@ -1,0 +1,145 @@
+name: CI
+
+# =============================================================
+# Petal & Co — Continuous Integration
+# -------------------------------------------------------------
+# Job A (lint-validate): fast, no Snowflake, runs on every push
+#   and PR. Catches broken refs/Jinja, YAML errors, and leaked
+#   secrets BEFORE a single credit is spent.
+# Job B (build-test): builds the full dbt DAG + runs tests +
+#   validates the semantic layer against Snowflake, materialising
+#   ONLY into the isolated PETAL_CO_CI database, then tears the
+#   schemas down. Runs on PRs into main + manual dispatch.
+# =============================================================
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# One CI run per branch; a new push cancels the previous run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # -----------------------------------------------------------
+  # Job A — lint + validate + secret scan (no warehouse)
+  # -----------------------------------------------------------
+  lint-validate:
+    name: lint-validate (no warehouse)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DBT_PROFILES_DIR: ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0            # gitleaks scans full history
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: pip
+          cache-dependency-path: ci/requirements-ci.txt
+
+      - name: Install CI dependencies
+        run: pip install -r ci/requirements-ci.txt
+
+      - name: dbt deps
+        run: dbt deps
+
+      - name: dbt parse (offline — no warehouse connection)
+        run: dbt parse --target ci
+
+      - name: yamllint (workflow + ci config)
+        run: yamllint -c ci/.yamllint .github/workflows ci
+
+      - name: SQLFluff lint (advisory)
+        continue-on-error: true      # advisory until the models are lint-clean
+        run: sqlfluff lint models --templater jinja
+
+      - name: gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # -----------------------------------------------------------
+  # Job B — build + test + semantic-layer validate (Snowflake)
+  # Isolated in PETAL_CO_CI; the CI role has NO write grant in
+  # PETAL_CO_DW. Runs on PRs into main (same-repo) + manual.
+  # -----------------------------------------------------------
+  build-test:
+    name: build-test (Snowflake, isolated)
+    needs: lint-validate
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DBT_PROFILES_DIR: ci
+      DBT_TARGET: ci                 # MetricFlow reads DBT_TARGET (it ignores --target)
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_CI_PRIVATE_KEY_PATH: ci_key.p8
+      SNOWFLAKE_CI_PRIVATE_KEY_PASSPHRASE: ${{ secrets.SNOWFLAKE_CI_PRIVATE_KEY_PASSPHRASE }}
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: pip
+          cache-dependency-path: ci/requirements-ci.txt
+
+      - name: Install CI dependencies
+        run: pip install -r ci/requirements-ci.txt
+
+      - name: Write CI private key from secret
+        env:
+          CI_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_CI_PRIVATE_KEY }}
+        run: |
+          printf '%s' "$CI_PRIVATE_KEY" > ci_key.p8
+          chmod 600 ci_key.p8
+
+      - name: dbt deps
+        run: dbt deps
+
+      - name: Guard — refuse to run against prod (fail-closed)
+        run: dbt run-operation ci_guard --target ci
+
+      - name: Pre-clean orphaned CI schemas
+        run: dbt run-operation ci_teardown --target ci
+
+      - name: dbt build (into isolated PETAL_CO_CI)
+        run: dbt build --target ci
+
+      - name: SQLFluff lint (dbt templater, advisory)
+        continue-on-error: true
+        run: sqlfluff lint models --templater dbt
+
+      - name: MetricFlow — validate semantic layer
+        run: mf validate-configs
+
+      - name: MetricFlow — smoke query (at_risk_mrr)
+        run: mf query --metrics at_risk_mrr
+
+      - name: Teardown CI schemas
+        if: always()
+        run: dbt run-operation ci_teardown --target ci
+
+      - name: Remove CI private key
+        if: always()
+        run: rm -f ci_key.p8
