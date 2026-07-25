@@ -2,6 +2,8 @@
 
 **Schema Works Demo Project 2**
 
+[![CI](https://github.com/siddarthreddy-k/petal-co-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/siddarthreddy-k/petal-co-demo/actions/workflows/ci.yml)
+
 Petal & Co is a mock D2C beauty and wellness brand built as a Schema Works portfolio demo. This repo contains a fully working data pipeline — from synthetic data generation through to a live Looker Studio dashboard — built on the same stack used for real client engagements.
 
 > **Live dashboard:** [View on Looker Studio](https://datastudio.google.com/s/noNS3VpwPDo)
@@ -11,6 +13,7 @@ Petal & Co is a mock D2C beauty and wellness brand built as a Schema Works portf
 - [Churn Model Decisions](./docs/Churn-model-decisions.md)
 - [Reverse-ETL → Klaviyo (consent-gated activation)](./docs/Reverse-ETL-Klaviyo.md)
 - [GDPR Article 17 — Right to Erasure](./docs/GDPR-Right-to_Erasure.md)
+- [CI/CD Pipeline (GitHub Actions + dbt + Snowflake)](./docs/CI-CD-Pipeline.md)
 
 ---
 
@@ -337,6 +340,17 @@ Full documentation of feature engineering choices, leakage discovery, model sele
 | Logistic Regression | 0.927 | 0.914 ± 0.014 | Interpretable baseline |
 | Random Forest | 0.926 | 0.907 ± 0.012 | Used for SHAP analysis |
 | **XGBoost** | **0.933** | **0.925 ± 0.017** | **Production model** |
+
+---
+
+## Continuous Integration
+
+Every push and pull request is checked automatically by [GitHub Actions](./.github/workflows/ci.yml):
+
+- **`lint-validate`** (every push, no warehouse): `dbt parse` (broken refs / Jinja), `yamllint`, an advisory SQLFluff pass, and a `gitleaks` secret scan across history.
+- **`build-test`** (pull requests into `main`): a full `dbt build` + tests + `mf validate-configs` against Snowflake, materialised **only** into an isolated `PETAL_CO_CI` database — the CI role has no write grant in `PETAL_CO_DW`. Every run tears its schemas down and runs on a credit-capped, auto-suspending CI warehouse.
+
+Setup is a one-time job — see the [CI/CD deep-dive](./docs/CI-CD-Pipeline.md) and the [setup runbook](./docs/CI-CD-Setup-Runbook.md).
 
 ---
 
