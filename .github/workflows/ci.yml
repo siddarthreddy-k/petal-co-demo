@@ -111,8 +111,14 @@ jobs:
         env:
           CI_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_CI_PRIVATE_KEY }}
         run: |
-          printf '%s' "$CI_PRIVATE_KEY" > ci_key.p8
+          # Strip any CR (Windows-copied keys) and ensure a trailing newline.
+          printf '%s\n' "$CI_PRIVATE_KEY" | tr -d '\r' > ci_key.p8
           chmod 600 ci_key.p8
+          # Fail fast with a clear message if the secret was empty or malformed.
+          if ! grep -q "BEGIN.*PRIVATE KEY" ci_key.p8; then
+            echo "::error::ci_key.p8 has no PEM header. Is the SNOWFLAKE_CI_PRIVATE_KEY secret set to the full key (incl. BEGIN/END lines)?"
+            exit 1
+          fi
 
       - name: dbt deps
         run: dbt deps
