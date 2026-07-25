@@ -4,6 +4,8 @@ extends: relaxed
 rules:
   line-length: disable
   document-start: disable
+  # Cosmetic + fragile across Windows editors / file downloads — don't fail CI on it.
+  new-line-at-end-of-file: disable
   comments:
     min-spaces-from-content: 1
   truthy:
