@@ -1,0 +1,17 @@
+# =============================================================
+# Petal & Co — CI dependencies (lean; no ML/BigQuery libs)
+# Mirrors the dbt + MetricFlow versions from the root
+# requirements.txt so CI matches local behaviour exactly.
+# =============================================================
+
+# --- dbt + Snowflake adapter ---
+dbt-core==1.11.7
+dbt-snowflake==1.11.3
+
+# --- dbt Semantic Layer (MetricFlow) ---
+dbt-metricflow==0.13.0
+
+# --- Lint / validate ---
+sqlfluff==3.2.5
+sqlfluff-templater-dbt==3.2.5
+yamllint==1.35.1
